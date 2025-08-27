@@ -5,11 +5,23 @@ use std::process::{Command, Stdio};
 fn main() {
     loop {
         let user = env::var("USER").unwrap_or("user".to_string());
-        let hostname = env::var("HOSTNAME").unwrap_or("hostname".to_string());
+
+        // Get actual hostname using `uname -n`
+        let hostname = String::from_utf8(
+            Command::new("uname")
+            .arg("-n")
+            .output()
+            .expect("failed to get hostname")
+            .stdout,
+        )
+        .unwrap()
+        .trim()
+        .to_string();
+
         let cwd = env::current_dir()
-            .ok()
-            .and_then(|p| p.file_name().map(|n| n.to_string_lossy().to_string()))
-            .unwrap_or("folder".to_string());
+        .ok()
+        .and_then(|p| p.file_name().map(|n| n.to_string_lossy().to_string()))
+        .unwrap_or("folder".to_string());
 
         // Fancy multiline prompt like Zsh
         println!("╭─{}@{} {}", user, hostname, cwd);
@@ -26,12 +38,12 @@ fn main() {
         if input == "exit" { break; }
 
         let output = Command::new("/bin/sh")
-            .arg("-c")
-            .arg(input)
-            .stdin(Stdio::inherit())
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::piped())
-            .output();
+        .arg("-c")
+        .arg(input)
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::piped())
+        .output();
 
         match output {
             Ok(out) => {
